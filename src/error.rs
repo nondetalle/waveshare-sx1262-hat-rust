@@ -8,7 +8,10 @@ pub enum Error {
     #[error("AUX did not become ready within {0:?}")]
     AuxTimeout(Duration),
     #[error("mode transition to {mode:?} timed out after {timeout:?}")]
-    ModeTransitionTimeout { mode: crate::Mode, timeout: Duration },
+    ModeTransitionTimeout {
+        mode: crate::Mode,
+        timeout: Duration,
+    },
     #[error("UART timeout while {operation}")]
     UartTimeout { operation: &'static str },
     #[error("short response: expected {expected} bytes, got {actual}")]
@@ -26,7 +29,11 @@ pub enum Error {
     #[error("write echo mismatch: expected {expected:02X?}, got {actual:02X?}")]
     WriteEchoMismatch { expected: Vec<u8>, actual: Vec<u8> },
     #[error("readback mismatch at 0x{start:02X}: expected {expected:02X?}, got {actual:02X?}")]
-    ReadbackMismatch { start: u8, expected: Vec<u8>, actual: Vec<u8> },
+    ReadbackMismatch {
+        start: u8,
+        expected: Vec<u8>,
+        actual: Vec<u8>,
+    },
     #[error("invalid channel {0}; supported hardware range is 0..=80")]
     InvalidChannel(u8),
     #[error("frequency {0} MHz is not on a 1 MHz channel in 850.125..=930.125 MHz")]
@@ -36,7 +43,10 @@ pub enum Error {
     #[error("invalid payload length {0}")]
     InvalidPayloadLength(usize),
     #[error("operation requires {required:?} mode, current state is {actual:?}")]
-    WrongMode { required: crate::Mode, actual: crate::State },
+    WrongMode {
+        required: crate::Mode,
+        actual: crate::State,
+    },
     #[error("unsupported configuration: {0}")]
     UnsupportedConfiguration(String),
     #[error("transport error: {0}")]

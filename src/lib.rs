@@ -7,9 +7,9 @@ mod config;
 mod driver;
 mod error;
 mod protocol;
-mod transport;
 #[cfg(feature = "rppal-backend")]
 pub mod rppal_backend;
+mod transport;
 
 pub use config::*;
 pub use driver::*;

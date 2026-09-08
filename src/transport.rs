@@ -2,16 +2,28 @@ use crate::Result;
 use std::time::Duration;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum AuxLevel { Low, High }
+pub enum AuxLevel {
+    Low,
+    High,
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct ModePins { pub m1: bool, pub m0: bool }
+pub struct ModePins {
+    pub m1: bool,
+    pub m0: bool,
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct UartConfig { pub baud: u32, pub parity: crate::Parity }
+pub struct UartConfig {
+    pub baud: u32,
+    pub parity: crate::Parity,
+}
 
 impl UartConfig {
-    pub const CONFIGURATION: Self = Self { baud: 9_600, parity: crate::Parity::None };
+    pub const CONFIGURATION: Self = Self {
+        baud: 9_600,
+        parity: crate::Parity::None,
+    };
 }
 
 /// Platform abstraction. Implementations must honor the supplied timeouts.
