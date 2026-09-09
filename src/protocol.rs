@@ -12,7 +12,7 @@ pub struct RawTransaction {
     pub response: Vec<u8>,
 }
 pub(crate) fn transact(
-    t: &mut dyn Transport,
+    t: &mut Transport,
     cmd: Command,
     start: u8,
     data: &[u8],

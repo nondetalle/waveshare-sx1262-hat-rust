@@ -80,7 +80,7 @@ pub struct Diagnostics {
     pub last_transaction: Option<RawTransaction>,
 }
 struct Inner {
-    transport: Box<dyn Transport>,
+    transport: Box<Transport>,
     state: State,
     normal_uart: UartConfig,
     timeouts: Timeouts,
@@ -92,7 +92,7 @@ pub struct Driver {
     inner: Arc<Mutex<Inner>>,
 }
 impl Driver {
-    pub fn new(transport: Box<dyn Transport>) -> Self {
+    pub fn new(transport: Box<Transport>) -> Self {
         Self {
             inner: Arc::new(Mutex::new(Inner {
                 transport,

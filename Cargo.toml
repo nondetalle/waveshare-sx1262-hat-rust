@@ -9,17 +9,8 @@ repository = "https://example.invalid/waveshare-sx1262-hat"
 keywords = ["lora", "sx1262", "raspberry-pi", "uart", "radio"]
 categories = ["embedded", "hardware-support"]
 
-[features]
-default = ["rppal-backend"]
-rppal-backend = ["dep:rppal", "dep:serialport"]
-trace = ["dep:log"]
-
 [dependencies]
 thiserror = "2"
 parking_lot = "0.12"
-rppal = { version = "0.20", optional = true }
-serialport = { version = "4.6", default-features = false, optional = true }
-log = { version = "0.4", optional = true }
-
-[dev-dependencies]
-hex = "0.4"
+rppal = "0.20"
+serialport = { version = "4.6", default-features = false}
