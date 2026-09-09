@@ -2,7 +2,7 @@ use std::time::Duration;
 use waveshare_sx1262_hat::{Driver, Mode};
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Example BCM pins only. Wire and configure these to match your HAT setup.
-    let radio = Driver::new("/dev/serial0", 22, 27, 4)?;
+    let radio = Driver::new()?;
     radio.enter_mode(Mode::Configuration)?;
     let pid = radio.read_product_id()?;
     println!("PID: {}", pid.hex());

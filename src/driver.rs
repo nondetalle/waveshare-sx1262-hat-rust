@@ -90,9 +90,9 @@ pub struct Driver {
     inner: Arc<Mutex<Inner>>,
 }
 impl Driver {
-    pub fn new(path: impl Into<String>, m0_bcm: u8, m1_bcm: u8, aux_bcm: u8) -> Result<Self> {
+    pub fn new() -> Result<Self> {
         let mut i = Inner {
-            transport: Transport::new(path, m0_bcm, m1_bcm, aux_bcm)?,
+            transport: Transport::new()?,
             state: State::Starting,
             normal_uart: UartConfig {
                 baud: 9600,

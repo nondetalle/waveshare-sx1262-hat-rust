@@ -40,23 +40,23 @@ pub struct Transport {
     uart: UartConfig,
 }
 impl Transport {
-    pub fn new(path: impl Into<String>, m0_bcm: u8, m1_bcm: u8, aux_bcm: u8) -> Result<Self> {
+    pub fn new() -> Result<Self> {
         let gpio = Gpio::new().map_err(|e| Error::Transport(e.to_string()))?;
         let mut t = Self {
-            port: serialport::new(path.into(), 9600)
+            port: serialport::new("/dev/serial0", 9_600)
                 .timeout(Duration::from_millis(100))
                 .open()
                 .map_err(|e| Error::Transport(e.to_string()))?,
             m0: gpio
-                .get(m0_bcm)
+                .get(22)
                 .map_err(|e| Error::Transport(e.to_string()))?
                 .into_output_low(),
             m1: gpio
-                .get(m1_bcm)
+                .get(27)
                 .map_err(|e| Error::Transport(e.to_string()))?
                 .into_output_low(),
             aux: gpio
-                .get(aux_bcm)
+                .get(4)
                 .map_err(|e| Error::Transport(e.to_string()))?
                 .into_input(),
             uart: UartConfig {
