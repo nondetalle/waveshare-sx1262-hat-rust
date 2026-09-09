@@ -33,13 +33,11 @@ impl Mode {
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum State {
-    Closed,
     Starting,
     Normal,
     Wor,
     Configuration,
     Sleep,
-    Fault,
 }
 #[derive(Clone, Copy, Debug)]
 pub struct Timeouts {
@@ -80,7 +78,7 @@ pub struct Diagnostics {
     pub last_transaction: Option<RawTransaction>,
 }
 struct Inner {
-    transport: Box<Transport>,
+    transport: Transport,
     state: State,
     normal_uart: UartConfig,
     timeouts: Timeouts,
@@ -92,49 +90,31 @@ pub struct Driver {
     inner: Arc<Mutex<Inner>>,
 }
 impl Driver {
-    pub fn new(transport: Box<Transport>) -> Self {
-        Self {
-            inner: Arc::new(Mutex::new(Inner {
-                transport,
-                state: State::Closed,
-                normal_uart: UartConfig {
-                    baud: 9600,
-                    parity: Parity::None,
-                },
-                timeouts: Timeouts::default(),
-                diag: Diagnostics::default(),
-                configuration: None,
-            })),
-        }
+    pub fn new(path: impl Into<String>, m0_bcm: u8, m1_bcm: u8, aux_bcm: u8) -> Result<Self> {
+        let mut i = Inner {
+            transport: Transport::new(path, m0_bcm, m1_bcm, aux_bcm)?,
+            state: State::Starting,
+            normal_uart: UartConfig {
+                baud: 9600,
+                parity: Parity::None,
+            },
+            timeouts: Timeouts::default(),
+            diag: Diagnostics::default(),
+            configuration: None,
+        };
+        Self::transition(&mut i, Mode::Normal)?;
+        Ok(Self {
+            inner: Arc::new(Mutex::new(i)),
+        })
     }
     pub fn set_timeouts(&self, v: Timeouts) {
         self.inner.lock().timeouts = v
-    }
-    pub fn open(&self) -> Result<()> {
-        let mut i = self.inner.lock();
-        i.state = State::Starting;
-        i.transport.open()?;
-        Self::transition(&mut i, Mode::Normal)?;
-        Ok(())
-    }
-    pub fn close(&self) -> Result<()> {
-        let mut i = self.inner.lock();
-        i.transport.close()?;
-        i.state = State::Closed;
-        Ok(())
     }
     pub fn state(&self) -> State {
         self.inner.lock().state
     }
     pub fn diagnostics(&self) -> Diagnostics {
         self.inner.lock().diag.clone()
-    }
-    fn ensure_open(i: &Inner) -> Result<()> {
-        if !i.transport.is_open() || i.state == State::Closed {
-            Err(Error::DeviceNotOpen)
-        } else {
-            Ok(())
-        }
     }
     fn wait_aux(i: &mut Inner, timeout: Duration) -> Result<()> {
         let until = Instant::now() + timeout;
@@ -154,11 +134,9 @@ impl Driver {
     }
     pub fn wait_aux_ready(&self, timeout: Duration) -> Result<()> {
         let mut i = self.inner.lock();
-        Self::ensure_open(&i)?;
         Self::wait_aux(&mut i, timeout)
     }
     fn transition(i: &mut Inner, mode: Mode) -> Result<()> {
-        Self::ensure_open(i)?;
         let timeout = i.timeouts.mode;
         Self::wait_aux(i, timeout)?;
         i.transport.set_mode_pins(mode.pins())?;
@@ -191,38 +169,25 @@ impl Driver {
             });
         }
         let timeout = i.timeouts.uart;
-        let (v, tr) = protocol::transact(&mut *i.transport, cmd, start, data, read_len, timeout)?;
+        let (v, tr) = protocol::transact(&mut i.transport, cmd, start, data, read_len, timeout)?;
         i.diag.last_transaction = Some(tr);
         Self::wait_aux(i, timeout)?;
         Ok(v)
     }
-    pub fn read_registers(&self, start: u8, length: usize) -> Result<Vec<u8>> {
-        let mut i = self.inner.lock();
-        Self::tx(&mut i, Command::Read, start, &[], length)
-    }
-    pub fn write_registers_temporary(&self, start: u8, data: &[u8]) -> Result<()> {
-        let mut i = self.inner.lock();
-        Self::tx(&mut i, Command::TemporaryWrite, start, data, 0)?;
-        Ok(())
-    }
-    pub fn write_registers_persistent(&self, start: u8, data: &[u8]) -> Result<()> {
-        let mut i = self.inner.lock();
-        Self::tx(&mut i, Command::PersistentWrite, start, data, 0)?;
-        i.diag.persistent_writes += 1;
-        Ok(())
-    }
     pub fn read_product_id(&self) -> Result<ProductId> {
-        let v = self.read_registers(0x80, 7)?;
+        let mut i = self.inner.lock();
+        let v = Self::tx(&mut i, Command::Read, 0x80, &[], 7)?;
         let mut a = [0; 7];
         a.copy_from_slice(&v);
         Ok(ProductId(a))
     }
     pub fn read_configuration(&self) -> Result<Configuration> {
-        let v = self.read_registers(0, 9)?;
+        let mut i = self.inner.lock();
+        let v = Self::tx(&mut i, Command::Read, 0, &[], 9)?;
         let mut a = [0; 9];
         a.copy_from_slice(&v);
         let c = Configuration::decode(a);
-        self.inner.lock().configuration = Some(c.clone());
+        i.configuration = Some(c.clone());
         Ok(c)
     }
     pub fn apply_configuration(
@@ -233,7 +198,6 @@ impl Driver {
     ) -> Result<()> {
         c.validate()?;
         let mut i = self.inner.lock();
-        Self::ensure_open(&i)?;
         Self::transition(&mut i, Mode::Configuration)?;
         i.transport.flush_input()?;
         let current = Self::tx(&mut i, Command::Read, 0, &[], 9)?;
@@ -358,7 +322,6 @@ impl Driver {
     }
     pub fn resynchronize(&self) -> Result<()> {
         let mut i = self.inner.lock();
-        Self::ensure_open(&i)?;
         i.transport.flush_input()?;
         Self::transition(&mut i, Mode::Configuration)?;
         i.transport.flush_input()?;
