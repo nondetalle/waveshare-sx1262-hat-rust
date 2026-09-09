@@ -190,6 +190,7 @@ impl Driver {
         i.configuration = Some(c.clone());
         Ok(c)
     }
+    /// Wireless configuration feature not implemented!
     pub fn apply_configuration(
         &self,
         c: &Configuration,
