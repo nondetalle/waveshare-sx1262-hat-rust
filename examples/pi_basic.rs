@@ -2,7 +2,7 @@ use std::time::Duration;
 use waveshare_sx1262_hat::{rppal_backend::RppalTransport, Driver, Mode};
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Example BCM pins only. Wire and configure these to match your HAT setup.
-    let transport = RppalTransport::new("/dev/serial0", 22, 27, 17)?;
+    let transport = RppalTransport::new("/dev/serial0", 22, 27, 4)?;
     let radio = Driver::new(Box::new(transport));
     radio.open()?;
     radio.enter_mode(Mode::Configuration)?;
@@ -13,7 +13,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     cfg.network_id = 1;
     radio.apply_configuration(&cfg, false, Mode::Normal)?;
     radio.send_transparent(b"hello")?;
-    let frame = radio.receive(256, Duration::from_secs(5), false)?;
+    let frame = radio.receive(256, Duration::ZERO, false)?;
     println!("received {} bytes", frame.payload.len());
     radio.close()?;
     Ok(())

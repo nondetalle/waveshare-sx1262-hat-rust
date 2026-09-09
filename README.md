@@ -21,7 +21,7 @@ A blocking, thread-safe Rust driver for the **UART-controlled modem firmware** o
 4. Ensure the user can access `/dev/serial0` and GPIO, commonly through the `dialout` and `gpio` groups.
 5. Verify that `/dev/serial0` targets the intended hardware UART. Bluetooth/UART overlays differ by image and configuration.
 
-The example uses BCM 22 for M0, BCM 27 for M1, and BCM 17 for AUX. These are example assignments, not guaranteed Waveshare defaults.
+The example uses BCM 22 for M0, BCM 27 for M1, and BCM 4 for AUX. These are example assignments, not guaranteed Waveshare defaults.
 
 ## Build and run
 

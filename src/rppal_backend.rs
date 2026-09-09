@@ -150,7 +150,7 @@ impl Transport for RppalTransport {
     fn read_some(&mut self, b: &mut [u8], timeout: Duration) -> Result<usize> {
         let start = Instant::now();
         loop {
-            if start.elapsed() >= timeout {
+            if !timeout.is_zero() && start.elapsed() >= timeout {
                 return Err(Error::UartTimeout {
                     operation: "reading",
                 });

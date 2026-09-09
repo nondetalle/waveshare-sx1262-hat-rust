@@ -43,7 +43,6 @@ pub enum State {
 }
 #[derive(Clone, Copy, Debug)]
 pub struct Timeouts {
-    pub aux: Duration,
     pub mode: Duration,
     pub uart: Duration,
     pub debounce: Duration,
@@ -51,7 +50,6 @@ pub struct Timeouts {
 impl Default for Timeouts {
     fn default() -> Self {
         Self {
-            aux: Duration::from_secs(3),
             mode: Duration::from_secs(3),
             uart: Duration::from_secs(2),
             debounce: Duration::from_millis(5),
@@ -195,6 +193,7 @@ impl Driver {
         let timeout = i.timeouts.uart;
         let (v, tr) = protocol::transact(&mut *i.transport, cmd, start, data, read_len, timeout)?;
         i.diag.last_transaction = Some(tr);
+        Self::wait_aux(i, timeout)?;
         Ok(v)
     }
     pub fn read_registers(&self, start: u8, length: usize) -> Result<Vec<u8>> {
@@ -354,6 +353,7 @@ impl Driver {
                 "ambient RSSI response: {r:02X?}"
             )));
         }
+        Self::wait_aux(&mut i, timeout)?;
         Ok(r[3])
     }
     pub fn resynchronize(&self) -> Result<()> {
