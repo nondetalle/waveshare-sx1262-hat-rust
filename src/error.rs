@@ -3,8 +3,6 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("device is not open")]
-    DeviceNotOpen,
     #[error("AUX did not become ready within {0:?}")]
     AuxTimeout(Duration),
     #[error("mode transition to {mode:?} timed out after {timeout:?}")]
@@ -51,8 +49,6 @@ pub enum Error {
     UnsupportedConfiguration(String),
     #[error("transport error: {0}")]
     Transport(String),
-    #[error("device fault: {0}")]
-    DeviceFault(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
