@@ -304,7 +304,7 @@ impl Driver {
             timestamp: SystemTime::now(),
         })
     }
-    pub fn query_ambient_rssi_experimental(&self) -> Result<u8> {
+    pub fn query_ambient_rssi(&self) -> Result<f32> {
         let mut i = self.inner.lock();
         Self::require_data_mode(&i)?;
         let req = [0xc0, 0xc1, 0xc2, 0xc3, 0x00, 0x01];
@@ -318,7 +318,7 @@ impl Driver {
             )));
         }
         Self::wait_aux(&mut i, timeout)?;
-        Ok(r[3])
+        Ok(-(r[3] as f32) / 2.0)
     }
     pub fn resynchronize(&self) -> Result<()> {
         let mut i = self.inner.lock();
