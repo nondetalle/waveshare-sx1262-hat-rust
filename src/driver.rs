@@ -152,7 +152,7 @@ impl Driver {
             });
         }
         let timeout = i.timeouts.uart;
-        let (v, tr) = protocol::transact(&mut i.transport, cmd, start, data, read_len, timeout)?;
+        let (v, _) = protocol::transact(&mut i.transport, cmd, start, data, read_len, timeout)?;
         #[cfg(feature = "trace")]
         println!("w: {:02X?}", tr.request);
         #[cfg(feature = "trace")]
