@@ -1,11 +1,11 @@
 [package]
-name = "waveshare-sx1262-hat"
+name = "waveshare-sx1262-hat-rust"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.75"
 description = "UART driver for the Waveshare SX1262 868M LoRa HAT on Raspberry Pi"
-license = "MIT OR Apache-2.0"
-repository = "https://example.invalid/waveshare-sx1262-hat"
+license = "Apache-2.0"
+repository = "ttps://github.com/nondetalle/waveshare-sx1262-hat-rust.git"
 keywords = ["lora", "sx1262", "raspberry-pi", "uart", "radio"]
 categories = ["embedded", "hardware-support"]
 
