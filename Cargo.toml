@@ -14,3 +14,6 @@ thiserror = "2"
 parking_lot = "0.12"
 rppal = "0.20"
 serialport = { version = "4.6", default-features = false}
+
+[features]
+trace = []

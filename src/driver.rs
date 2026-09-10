@@ -68,21 +68,11 @@ pub struct ReceivedFrame {
     pub rssi_dbm: Option<f32>,
     pub timestamp: SystemTime,
 }
-#[derive(Clone, Debug, Default)]
-pub struct Diagnostics {
-    pub aux_timeouts: u64,
-    pub malformed_responses: u64,
-    pub mode_transitions: u64,
-    pub persistent_writes: u64,
-    pub last_mode_transition: Option<(Mode, SystemTime)>,
-    pub last_transaction: Option<RawTransaction>,
-}
 struct Inner {
     transport: Transport,
     state: State,
     normal_uart: UartConfig,
     timeouts: Timeouts,
-    diag: Diagnostics,
     configuration: Option<Configuration>,
 }
 #[derive(Clone)]
@@ -99,7 +89,6 @@ impl Driver {
                 parity: Parity::None,
             },
             timeouts: Timeouts::default(),
-            diag: Diagnostics::default(),
             configuration: None,
         };
         Self::transition(&mut i, Mode::Normal)?;
@@ -113,9 +102,6 @@ impl Driver {
     pub fn state(&self) -> State {
         self.inner.lock().state
     }
-    pub fn diagnostics(&self) -> Diagnostics {
-        self.inner.lock().diag.clone()
-    }
     fn wait_aux(i: &mut Inner, timeout: Duration) -> Result<()> {
         let until = Instant::now() + timeout;
         loop {
@@ -126,7 +112,6 @@ impl Driver {
                 }
             }
             if Instant::now() >= until {
-                i.diag.aux_timeouts += 1;
                 return Err(Error::AuxTimeout(timeout));
             }
             thread::sleep(Duration::from_millis(1))
@@ -153,8 +138,6 @@ impl Driver {
             Mode::Configuration => State::Configuration,
             Mode::Sleep => State::Sleep,
         };
-        i.diag.mode_transitions += 1;
-        i.diag.last_mode_transition = Some((mode, SystemTime::now()));
         Ok(())
     }
     pub fn enter_mode(&self, mode: Mode) -> Result<()> {
@@ -170,7 +153,10 @@ impl Driver {
         }
         let timeout = i.timeouts.uart;
         let (v, tr) = protocol::transact(&mut i.transport, cmd, start, data, read_len, timeout)?;
-        i.diag.last_transaction = Some(tr);
+        #[cfg(feature = "trace")]
+        println!("w: {:02X?}", tr.request);
+        #[cfg(feature = "trace")]
+        println!("r: {:02X?}", tr.response);
         Self::wait_aux(i, timeout)?;
         Ok(v)
     }
@@ -218,9 +204,6 @@ impl Driver {
                 Command::TemporaryWrite
             };
             Self::tx(&mut i, cmd, first as u8, &desired[first..=last], 0)?;
-            if persistent {
-                i.diag.persistent_writes += 1
-            }
             let actual = Self::tx(&mut i, Command::Read, 0, &[], 7)?;
             if actual != desired[..7] {
                 return Err(Error::ReadbackMismatch {
@@ -253,6 +236,8 @@ impl Driver {
         let mut i = self.inner.lock();
         Self::require_data_mode(&i)?;
         let timeout = i.timeouts.uart;
+        #[cfg(feature = "trace")]
+        println!("w: {:02X?}", payload);
         i.transport.write_all(payload, timeout)?;
         Self::wait_aux(&mut i, timeout)
     }
@@ -270,6 +255,8 @@ impl Driver {
         let mut i = self.inner.lock();
         Self::require_data_mode(&i)?;
         let timeout = i.timeouts.uart;
+        #[cfg(feature = "trace")]
+        println!("w: {:02X?}", frame);
         i.transport.write_all(&frame, timeout)?;
         Self::wait_aux(&mut i, timeout)
     }
@@ -290,6 +277,8 @@ impl Driver {
         let mut buf = vec![0; max_len];
         let n = i.transport.read_some(&mut buf, timeout)?;
         buf.truncate(n);
+        #[cfg(feature = "trace")]
+        println!("r: {:02X?}", buf);
         let appended = i
             .configuration
             .as_ref()
@@ -310,9 +299,13 @@ impl Driver {
         Self::require_data_mode(&i)?;
         let req = [0xc0, 0xc1, 0xc2, 0xc3, 0x00, 0x01];
         let timeout = i.timeouts.uart;
+        #[cfg(feature = "trace")]
+        println!("w: {:02X?}", req);
         i.transport.write_all(&req, timeout)?;
         let mut r = [0; 4];
         i.transport.read_exact(&mut r, timeout)?;
+        #[cfg(feature = "trace")]
+        println!("r: {:02X?}", r);
         if r[..3] != [0xc1, 0, 1] {
             return Err(Error::MalformedResponse(format!(
                 "ambient RSSI response: {r:02X?}"
