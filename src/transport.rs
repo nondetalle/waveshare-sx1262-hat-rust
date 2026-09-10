@@ -152,17 +152,37 @@ impl Transport {
         Ok(())
     }
     pub fn read_some(&mut self, b: &mut [u8], timeout: Duration) -> Result<usize> {
+        if b.is_empty() {
+            return Ok(0);
+        }
         let start = Instant::now();
+        let mut tot = 0;
         loop {
-            if !timeout.is_zero() && start.elapsed() >= timeout {
-                return Err(Error::UartTimeout {
-                    operation: "reading",
-                });
+            if start.elapsed() >= timeout {
+                return if tot > 0 {
+                    // timeout cut the reception short
+                    Ok(tot)
+                } else {
+                    // nothing was received
+                    Err(Error::UartTimeout {
+                        operation: "reading",
+                    })
+                };
             }
-            match self.port.read(b) {
-                Ok(0) => {}
-                Ok(n) => return Ok(n),
-                Err(e) if e.kind() == std::io::ErrorKind::TimedOut => {}
+            match self.port.read(&mut b[tot..]) {
+                Ok(0) => {} // temporary EOF
+                Ok(n) => {
+                    tot += n;
+                    if tot == b.len() {
+                        return Ok(tot);
+                    }
+                }
+                Err(e) if e.kind() == std::io::ErrorKind::TimedOut => {
+                    if tot > 0 {
+                        // byte stream ended
+                        return Ok(tot);
+                    }
+                }
                 Err(e) => return Err(Error::Transport(e.to_string())),
             }
         }
