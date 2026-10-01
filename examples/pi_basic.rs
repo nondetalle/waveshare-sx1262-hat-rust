@@ -1,5 +1,5 @@
 use std::time::Duration;
-use waveshare_sx1262_hat::{Driver, Error, Mode};
+use waveshare_sx1262_hat_rust::{Driver, Error, Mode};
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let recv = std::env::args().any(|a| a == "r");
 
